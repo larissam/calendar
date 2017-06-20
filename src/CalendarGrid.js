@@ -31,6 +31,8 @@ const getCalendarDays = (startDate) => {
   return days;
 };
 
+const CELL_HEIGHT = 19; // px
+
 class CalendarGrid extends Component {
   constructor(props) {
     super(props);
@@ -39,11 +41,10 @@ class CalendarGrid extends Component {
     this.onMouseDown = this.onMouseDown.bind(this);
     this.onMouseUp = this.onMouseUp.bind(this);
     this.onMouseOver = this.onMouseOver.bind(this);
+    this.onCellRangeSelect = this.onCellRangeSelect.bind(this);
 
     const startOfWeek = moment().startOf('week');
 
-    // needs something to indicate where it's selected
-    // maybe cell height is 18.5?
     this.state = {
       startDate: startOfWeek,
       days: getCalendarDays(startOfWeek),
@@ -57,61 +58,71 @@ class CalendarGrid extends Component {
     alert(`clicked cell: ${moment.format('LLL')}`);
   }
 
+  onCellRangeSelect(startCell, endCell) {
+    alert(`selected cells: ${startCell.moment.format('LLL')} - ${endCell.moment.format('LLL')}`);
+  }
+
+  // need to make sure this is for left click only!
   onMouseDown(day, e) {
-    console.log('mousedown day: ', day);
-    console.log('mousedown e: ', e.target);
-    console.log('mousedown e offsetTop: ', e.target.offsetTop);
-    // console.log('mousedown e: ', e.target.getBoundingClientRect());
-    // console.log('mousedown e pageX: ', e.pageX);
-    // should set the events that are selected
-    //
-    // update the "days" to reflect which ones are selected
-    //
-    // how do we get the correct "day"? - got it through bind
+    console.log('mousedown e:')
+
+    // i want to save the moment/or the day cell here.
+    // const { days } = this.state;
+    const selectStartHeight = e.target.offsetTop;
+    const selectStartCell = day.timeslots[Math.floor(selectStartHeight/CELL_HEIGHT) + 1];
     this.setState({
       selecting: true,
-      selectStartHeight: e.target.offsetTop
+      selectStartHeight,
+      selectStartCell
     });
   }
 
   onMouseUp(day, e) {
-    console.log('mouseup e: ', e.target);
-    console.log('mouseup e: ', e.pageX);
-    // should call "onselectevent" afterwards
+    const {
+      days,
+      selectEndHeight,
+      selectStartCell
+    } = this.state;
+
+    const selectEndCell = day.timeslots[Math.floor(selectEndHeight/CELL_HEIGHT) + 1];
+
+    // side effect - altering "days"
+    day.timeslots.forEach((timeslot) => {
+      timeslot.selected = false;
+    });
+
     this.setState({
-      selecting: false
+      selecting: false,
+      selectStartHeight: 0,
+      selectEndHeight: 0,
+      days
+    }, () => {
+      this.onCellRangeSelect(selectStartCell, selectEndCell);
     });
   }
 
   onMouseOver(day, e) {
-    console.log('mouseover e: ', e);
-    console.log('mouseover day: ', day);
-    console.log('mouseover e: ', e.target);
-    console.log('mouseover e height: ', e.target.offsetHeight);
-    console.log('mouseover e offsetParent: ', e.target.offsetParent);
-    console.log('mouseover e offsetLeft: ', e.target.offsetLeft);
-    console.log('mouseover e offsetTop: ', e.target.offsetTop);
-    // console.log('mouseover e clientX: ', e.clientX);
-    // console.log('mouseover e screenX: ', e.screenX);
-    // console.log('mouseover e: ', e.pageX);
-    //
-    // update the "days" to reflect which ones are selected
-    // the days are all of the ones between selectStartHeight and e.target.offsetHeight
-    // we need to update the days...but it's only one day at a time!
     const {
       selectStartHeight,
-      selectEndHeight
+      selecting,
+      days
     } = this.state;
-    const updatedDay = [...day];
 
-    day.timeslots.forEach((timeslot, idx) => {
-      if(idx*19 > selectStartHeight && idx*19 < selectEndHeight) {
-        updatedDay.idx.selected = true;
-      }
-    });
+    if(selecting) {
+      const selectEndHeight = e.target.offsetTop;
 
-    if(this.state.selecting) {
+      // side effect - altering "days"
+      day.timeslots.forEach((timeslot, idx) => {
+        const height = idx*CELL_HEIGHT;
+
+        if(height > selectStartHeight && height < selectEndHeight) {
+          timeslot.selected = true;
+        }
+      });
+
       this.setState({
+        selectEndHeight,
+        days
       });
     }
   }
