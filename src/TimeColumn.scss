@@ -1,0 +1,9 @@
+// times down the side
+.TimeColumn {
+  border: 1px solid gray;
+  width: 50px;
+
+  .TimeColumnCell {
+    border-bottom: 1px solid black;
+  }
+}

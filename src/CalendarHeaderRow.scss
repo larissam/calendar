@@ -1,0 +1,12 @@
+.CalendarHeaderRow {
+  display: flex;
+
+  .CalendarHeaderRowSpacer {
+    width: 50px;
+  }
+
+  .CalendarHeaderCol {
+    flex-grow: 1;
+    text-align: center;
+  }
+}
