@@ -5,43 +5,20 @@ import classnames from 'classnames';
 import { TimeColumn } from './TimeColumn';
 import DayColumn from './DayColumn';
 
+import { CELL_HEIGHT } from './enums';
+
+import { getCalendarDays } from './utils/getCalendarDays';
+
 import './CalendarGrid.css';
 
-// creates an array of 7 days, each with 48 timeslots
-// each timeslot has a moment object reflecting that time
-const getCalendarDays = (startDate) => {
-  // start with 7 days
-  const days = [...Array(7)].map((day) => {
-    const timeslots = [];
-
-    // each timeslot will have a moment object
-    [...Array(48)].map(() => {
-      timeslots.push({
-        moment: startDate.clone(),
-        selected: false
-      });
-      startDate.add(30, 'minutes');
-    });
-
-    return {
-      timeslots
-    };
-  });
-
-  return days;
-};
-
-const CELL_HEIGHT = 19; // px
 
 class CalendarGrid extends Component {
   constructor(props) {
     super(props);
 
-    this.onCellClick = this.onCellClick.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
     this.onMouseUp = this.onMouseUp.bind(this);
     this.onMouseOver = this.onMouseOver.bind(this);
-    this.onCellRangeSelect = this.onCellRangeSelect.bind(this);
 
     const startOfWeek = moment().startOf('week');
 
@@ -52,14 +29,6 @@ class CalendarGrid extends Component {
       selectStartHeight: 0,
       selectEndHeight: 0
     };
-  }
-
-  onCellClick(moment) {
-    alert(`clicked cell: ${moment.format('LLL')}`);
-  }
-
-  onCellRangeSelect(startCell, endCell) {
-    alert(`selected cells: ${startCell.moment.format('LLL')} - ${endCell.moment.format('LLL')}`);
   }
 
   // need to make sure this is for left click only!
@@ -97,7 +66,7 @@ class CalendarGrid extends Component {
       selectEndHeight: 0,
       days
     }, () => {
-      this.onCellRangeSelect(selectStartCell, selectEndCell);
+      this.props.onCellRangeSelect(selectStartCell, selectEndCell);
     });
   }
 
@@ -127,17 +96,58 @@ class CalendarGrid extends Component {
     }
   }
 
+  // this data transformation should go into a store
+  // take in the event props, sort them
+  // and split them out by day
+  splitEvents(){
+    const { events } = this.props;
+    const { days } = this.state;
+    const sortedEvents = events.sort((firstEvent, secondEvent) => {
+      const firstStartDate = moment(firstEvent.startDate);
+      const secondStartDate = moment(secondEvent.startDate);
+
+      if(firstStartDate.isBefore(secondStartDate)) {
+        return -1;
+      } else if (firstStartDate.isSame(secondStartDate)) {
+        return 0;
+      } else {
+        return 1;
+      }
+    });
+
+    // what if the dates are out of range?
+    // i should be able to query the dates out of the BE
+    // for now we can assume within range
+    const result = [...Array(7)].map(el => new Array());
+    sortedEvents.forEach((event) => {
+      const startDate = moment(event.startDate);
+
+      days.forEach((day, idx) => {
+        if(startDate.isBetween(day.startMoment, day.endMoment)) {
+          result[idx].push(event);
+        }
+      });
+    });
+
+    return result;
+  }
+
   // convert the bind to arrow functions
   render() {
+    const { events } = this.props;
     const { days } = this.state;
 
+    const processedEvents = this.splitEvents(events); // should be in a store
+
+    // reconsider how we map events to days...
     return (
       <tr className='CalendarGrid'>
         <TimeColumn />
-        { days.map((day) => (
+        { days.map((day, idx) => (
           <DayColumn
             day={ day }
-            onCellClick={ this.onCellClick }
+            events={ processedEvents[idx] }
+            onCellClick={ this.props.onCellClick }
             onMouseDown={ this.onMouseDown.bind(null, day) }
             onMouseUp={ this.onMouseUp.bind(null, day) }
             onMouseOver={ this.onMouseOver.bind(null, day) }
@@ -147,5 +157,9 @@ class CalendarGrid extends Component {
     );
   }
 }
+
+CalendarGrid.props = {
+  events: React.PropTypes.array
+};
 
 export default CalendarGrid;

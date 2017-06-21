@@ -1,8 +1,9 @@
 .DayColumn {
   border: 1px solid gray;
-  flex-grow: 1;
   display: flex; // for cells
   flex-direction: column;
+  flex-grow: 1;
+  position: relative;
 
   .DayColumnCell {
     flex-grow: 1;

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import DaysOfWeek from './enums';
+import { DaysOfWeek } from './enums';
 
 import './CalendarHeaderRow.css';
 
