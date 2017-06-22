@@ -16,9 +16,9 @@ class CalendarGrid extends Component {
   constructor(props) {
     super(props);
 
-    this.onMouseDown = this.onMouseDown.bind(this);
-    this.onMouseUp = this.onMouseUp.bind(this);
-    this.onMouseOver = this.onMouseOver.bind(this);
+    this.getMouseDownHandler = day => e => this.onMouseDown(day, e);
+    this.getMouseUpHandler = day => e => this.onMouseUp(day, e);
+    this.getMouseOverHandler = day => e => this.onMouseOver(day, e);
 
     const startOfWeek = moment().startOf('week');
 
@@ -26,21 +26,24 @@ class CalendarGrid extends Component {
       startDate: startOfWeek,
       days: getCalendarDays(startOfWeek),
       selecting: false,
+      selectingDay: null,
       selectStartHeight: 0,
       selectEndHeight: 0
     };
   }
 
+  // the day this is selecting is fine.
   // need to make sure this is for left click only!
   onMouseDown(day, e) {
-    console.log('mousedown e:')
-
+    console.log('onMouseDown day: ', day.startMoment.format('LLLL'));
     // i want to save the moment/or the day cell here.
     // const { days } = this.state;
     const selectStartHeight = e.target.offsetTop;
     const selectStartCell = day.timeslots[Math.floor(selectStartHeight/CELL_HEIGHT) + 1];
+    console.log('onMouseDown selectStartCell.moment: ', selectStartCell.moment.format('LLLL'));
     this.setState({
       selecting: true,
+      selectingDay: day,
       selectStartHeight,
       selectStartCell
     });
@@ -48,36 +51,49 @@ class CalendarGrid extends Component {
 
   onMouseUp(day, e) {
     const {
+      selectingDay,
       days,
+      selectStartHeight,
       selectEndHeight,
       selectStartCell
     } = this.state;
 
-    const selectEndCell = day.timeslots[Math.floor(selectEndHeight/CELL_HEIGHT) + 1];
+    if(day === selectingDay) {
+      // the day this is selecting is correct
+      // console.log('onMouseup - day: ', day.startMoment.format('LLLL'));
+      // console.log('selectStartCell.moment: ', selectStartCell.moment.format('LLLL'));
 
-    // side effect - altering "days"
-    day.timeslots.forEach((timeslot) => {
-      timeslot.selected = false;
-    });
+      // if there's no endCell, then we just want one cell over
+      const selectEndCell = selectEndHeight ? day.timeslots[Math.floor(selectEndHeight/CELL_HEIGHT) + 1] : day.timeslots[Math.floor(selectStartHeight/CELL_HEIGHT) + 2];
 
-    this.setState({
-      selecting: false,
-      selectStartHeight: 0,
-      selectEndHeight: 0,
-      days
-    }, () => {
-      this.props.onCellRangeSelect(selectStartCell, selectEndCell);
-    });
+      // side effect - altering "days"
+      day.timeslots.forEach((timeslot) => {
+        timeslot.selected = false;
+      });
+
+      this.setState({
+        selecting: false,
+        selectStartHeight: 0,
+        selectEndHeight: 0,
+        days
+      }, () => {
+        this.props.onCellRangeSelect({
+          startMoment: selectStartCell.moment,
+          endMoment: selectEndCell.moment
+        });
+      });
+    }
   }
 
   onMouseOver(day, e) {
     const {
+      selectingDay,
       selectStartHeight,
       selecting,
       days
     } = this.state;
 
-    if(selecting) {
+    if(day === selectingDay && selecting) {
       const selectEndHeight = e.target.offsetTop;
 
       // side effect - altering "days"
@@ -86,6 +102,8 @@ class CalendarGrid extends Component {
 
         if(height > selectStartHeight && height < selectEndHeight) {
           timeslot.selected = true;
+        } else {
+          timeslot.selected = false;
         }
       });
 
@@ -132,7 +150,6 @@ class CalendarGrid extends Component {
     return result;
   }
 
-  // convert the bind to arrow functions
   render() {
     const { events } = this.props;
     const { days } = this.state;
@@ -140,6 +157,7 @@ class CalendarGrid extends Component {
     const processedEvents = this.splitEvents(events); // should be in a store
 
     // reconsider how we map events to days...
+    // this doesn't seem to be passing in the right day?
     return (
       <tr className='CalendarGrid'>
         <TimeColumn />
@@ -147,10 +165,9 @@ class CalendarGrid extends Component {
           <DayColumn
             day={ day }
             events={ processedEvents[idx] }
-            onCellClick={ this.props.onCellClick }
-            onMouseDown={ this.onMouseDown.bind(null, day) }
-            onMouseUp={ this.onMouseUp.bind(null, day) }
-            onMouseOver={ this.onMouseOver.bind(null, day) }
+            onMouseDown={ this.getMouseDownHandler(day) }
+            onMouseUp={ this.getMouseUpHandler(day) }
+            onMouseOver={ this.getMouseOverHandler(day) }
             />
         ))}
       </tr>

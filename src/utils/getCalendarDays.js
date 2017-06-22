@@ -5,6 +5,9 @@ export const getCalendarDays = (startDate) => {
   const days = [...Array(7)].map((day) => {
     const timeslots = [];
 
+    const startMoment = startDate.clone();
+    const endMoment = startDate.clone().endOf('day');
+
     // each timeslot will have a moment object
     [...Array(48)].map(() => {
       timeslots.push({
@@ -15,8 +18,8 @@ export const getCalendarDays = (startDate) => {
     });
 
     return {
-      startMoment: startDate.clone(),
-      endMoment: startDate.clone().endOf('day'),
+      startMoment,
+      endMoment,
       timeslots
     };
   });

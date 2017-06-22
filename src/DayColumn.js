@@ -6,10 +6,10 @@ import { CELL_HEIGHT, DAY_COLUMN_HEIGHT, MS_IN_DAY } from './enums';
 import './DayColumn.css';
 import './EventOverlay.css';
 
-const DayColumnCell = ({ moment, selected, onCellClick }) => (
+const DayColumnCell = ({ moment, selected, onMouseDown }) => (
   <div
     className={ classnames('DayColumnCell', { 'selected' : selected }) }
-    onClick={ () => onCellClick(moment) }
+    onMouseDown={ onMouseDown }
     >
   </div>
 );
@@ -98,11 +98,12 @@ class DayColumn extends Component {
     const {
       day,
       events,
-      onCellClick,
       onMouseDown,
       onMouseUp,
       onMouseOver
     } = this.props;
+
+    // console.log('DayColumn - day: ', day.startMoment.format('LLLL'));
 
     // we need to render a certain style based on the events
     // but shouldn't events be an overlay? because they don't have to be on the exact increments
@@ -118,7 +119,7 @@ class DayColumn extends Component {
           <DayColumnCell
             selected={ selected }
             moment={ moment }
-            onCellClick={ onCellClick }
+            onMouseDown={ onMouseDown }
             />
         )) }
         { this.styleEvents(events).map(({ name, description, styles }) => (
@@ -136,7 +137,6 @@ class DayColumn extends Component {
 DayColumn.props = {
   day: React.PropTypes.object,
   events: React.PropTypes.array,
-  onCellClick: React.PropTypes.func,
   onMouseDown: React.PropTypes.func,
   onMouseUp: React.PropTypes.func,
   onMouseOver: React.PropTypes.func
