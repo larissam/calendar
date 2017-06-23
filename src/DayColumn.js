@@ -35,14 +35,11 @@ class DayColumn extends Component {
   // needs to be moved to a store
   // for each event, calculate - 'top' is based on startDate, 'height' is based on duration
   // also, for overlapping events, we need to adjust the 'left' based on the number of overlapping events (use percentage)
-  // i think we can use the unix timestamps to calculate the position...and the height
   styleEvents(events){
     const {
       day
     } = this.props;
 
-    // stores columnEndTimes
-    // can we assume one event for now?
     const columnEndTimes = [];
 
     return events.map((event) => {
@@ -60,7 +57,6 @@ class DayColumn extends Component {
       // loop through all the column event times and find the lowest column with no overlap
       for (let [idx, columnEndTime] of columnEndTimes.entries()) {
         if (startDate >= columnEndTime) {
-          // console.log('found lowest column at: ', idx);
           columnEndTimes[idx] = endDate;
 
           styles = {
@@ -76,7 +72,6 @@ class DayColumn extends Component {
       // if there is STILL overlap, then we need to make a new column
       // with the current event's endTime there.
       if(!styles.left) {
-        // console.log('creating new column');
         columnEndTimes.push(endDate);
 
         styles = {
@@ -103,11 +98,6 @@ class DayColumn extends Component {
       onMouseOver
     } = this.props;
 
-    // console.log('DayColumn - day: ', day.startMoment.format('LLLL'));
-
-    // we need to render a certain style based on the events
-    // but shouldn't events be an overlay? because they don't have to be on the exact increments
-    // but it should be on this level - since events are on a day basis
     return (
       <td
         className='DayColumn'

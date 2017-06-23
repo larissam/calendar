@@ -35,12 +35,10 @@ class CalendarGrid extends Component {
   // the day this is selecting is fine.
   // need to make sure this is for left click only!
   onMouseDown(day, e) {
-    console.log('onMouseDown day: ', day.startMoment.format('LLLL'));
     // i want to save the moment/or the day cell here.
     // const { days } = this.state;
     const selectStartHeight = e.target.offsetTop;
     const selectStartCell = day.timeslots[Math.floor(selectStartHeight/CELL_HEIGHT) + 1];
-    console.log('onMouseDown selectStartCell.moment: ', selectStartCell.moment.format('LLLL'));
     this.setState({
       selecting: true,
       selectingDay: day,
@@ -59,23 +57,21 @@ class CalendarGrid extends Component {
     } = this.state;
 
     if(day === selectingDay) {
-      // the day this is selecting is correct
-      // console.log('onMouseup - day: ', day.startMoment.format('LLLL'));
-      // console.log('selectStartCell.moment: ', selectStartCell.moment.format('LLLL'));
-
       // if there's no endCell, then we just want one cell over
       const selectEndCell = selectEndHeight ? day.timeslots[Math.floor(selectEndHeight/CELL_HEIGHT) + 1] : day.timeslots[Math.floor(selectStartHeight/CELL_HEIGHT) + 2];
 
-      // side effect - altering "days"
-      day.timeslots.forEach((timeslot) => {
-        timeslot.selected = false;
+      // move to separate "modifiers" object
+      day.timeslots.forEach((timeslot, idx, timeslots) => {
+        timeslots[idx] = {
+          ...timeslot,
+          selected: false
+        };
       });
 
       this.setState({
         selecting: false,
         selectStartHeight: 0,
         selectEndHeight: 0,
-        days
       }, () => {
         this.props.onCellRangeSelect({
           startMoment: selectStartCell.moment,
@@ -96,15 +92,15 @@ class CalendarGrid extends Component {
     if(day === selectingDay && selecting) {
       const selectEndHeight = e.target.offsetTop;
 
-      // side effect - altering "days"
-      day.timeslots.forEach((timeslot, idx) => {
+      // move to separate "modifiers" object
+      day.timeslots.forEach((timeslot, idx, timeslots) => {
         const height = idx*CELL_HEIGHT;
+        const selected = height > selectStartHeight && height < selectEndHeight;
 
-        if(height > selectStartHeight && height < selectEndHeight) {
-          timeslot.selected = true;
-        } else {
-          timeslot.selected = false;
-        }
+        timeslots[idx] = {
+          ...timeslot,
+          selected
+        };
       });
 
       this.setState({

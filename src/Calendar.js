@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
+import * as firebase from 'firebase';
+import { config } from './config';
+
 import Modal from 'react-modal';
 import CalendarHeaderRow from './CalendarHeaderRow';
 import CalendarGrid from './CalendarGrid';
 
 import './Calendar.css';
-
-import { events } from './events'; // mock data
 
 class Calendar extends Component {
   constructor(props) {
@@ -20,12 +21,39 @@ class Calendar extends Component {
 
     // should have start/end dates too
     this.state = {
-      events: events,
+      events: [],
       isEditEventModalOpen: false,
       selectedTimeRange: {},
       name: '',
       description: ''
     };
+  }
+
+  componentWillMount(){
+    firebase.initializeApp({
+      apiKey: config.firebase.apiKey,
+      authDomain: config.firebase.authDomain,
+      databaseURL: config.firebase.databaseURL
+    });
+
+    firebase.database().ref('events').on('value', (snapshot) => {
+      const firebaseData = snapshot.val();
+
+      if (firebaseData) {
+        const events = Object.entries(firebaseData).map(([ key, value ]) => ({
+          id: key,
+          ...value
+        }));
+
+        this.setState({
+          events
+        });
+      }
+    });
+  }
+
+  componentWillUnmount(){
+    firebase.off();
   }
 
   onFieldChange(fieldName, e) {
@@ -52,20 +80,21 @@ class Calendar extends Component {
     } = this.state;
 
     const { startMoment, endMoment } = selectedTimeRange;
-    console.log('createEvent - day: ', startMoment.format('LLLL'));
-    // console.log('endMoment: ', endMoment);
 
     const updatedEvents = [...events];
-    updatedEvents.push({
+    const newEvent = {
       name,
       description,
       startDate: startMoment.valueOf(),
       endDate: endMoment.valueOf()
-    });
+    };
+
+    updatedEvents.push(newEvent);
 
     this.setState({
       events: updatedEvents
     }, () => {
+      firebase.database().ref('events').push(newEvent);
       this.hideModal();
     });
   }
@@ -95,7 +124,6 @@ class Calendar extends Component {
     const { startMoment, endMoment } = selectedTimeRange;
 
     if(startMoment && endMoment) {
-    console.log('mayberendermodal - day: ', startMoment.format('LLLL'));
       return (
         <Modal
           isOpen={ isEditEventModalOpen }
